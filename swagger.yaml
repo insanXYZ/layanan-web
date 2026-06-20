@@ -1,0 +1,937 @@
+openapi: 3.0.3
+info:
+  title: Library Management API
+  version: 1.0.0
+  description: API documentation for Library Management System
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Auth
+    description: Authentication endpoints
+  - name: Users
+    description: User management endpoints
+  - name: Members
+    description: Member (borrower) management endpoints
+  - name: Dashboard
+    description: Dashboard statistics endpoint
+  - name: Racks
+    description: Book rack management endpoints
+  - name: Books
+    description: Book management endpoints
+  - name: Borrows
+    description: Borrow transaction management endpoints
+
+paths:
+  # ─────────────────────────────────────────
+  # AUTH
+  # ─────────────────────────────────────────
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login user
+      description: Authenticates a user with email and password. On success, sets an HTTP-only cookie `X-ACC-TOKEN` containing the access token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: The user's registered email address
+                password:
+                  type: string
+                  minLength: 8
+                  description: The user's password, minimum 8 characters
+      responses:
+        "200":
+          description: Login successful. Access token is set via HTTP-only cookie.
+          headers:
+            Set-Cookie:
+              description: HTTP-only cookie containing the access token. Cookie name is `X-ACC-TOKEN`.
+              schema:
+                type: string
+                description: Cookie string in the format `X-ACC-TOKEN=<token>; HttpOnly; Path=/`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout user
+      description: Logs out the currently authenticated user and clears the access token cookie.
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ─────────────────────────────────────────
+  # USERS
+  # ─────────────────────────────────────────
+  /api/users:
+    get:
+      tags: [Users]
+      summary: Get all users
+      description: Retrieves a list of all registered users.
+      responses:
+        "200":
+          description: List of users retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        description: Array of user objects
+                        items:
+                          $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Users]
+      summary: Create a new user
+      description: Creates a new user account. Accepts multipart form data including an optional profile image.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  description: Full name of the user
+                email:
+                  type: string
+                  format: email
+                  description: Email address of the user, must be unique
+                password:
+                  type: string
+                  description: Password for the user account
+                image:
+                  type: string
+                  format: binary
+                  description: Optional profile picture file
+      responses:
+        "200":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/users/{id}:
+    put:
+      tags: [Users]
+      summary: Update a user
+      description: Updates an existing user's data by ID. All fields are optional.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Full name of the user
+                email:
+                  type: string
+                  format: email
+                  description: Email address of the user
+                password:
+                  type: string
+                  description: New password for the user account
+                image:
+                  type: string
+                  format: binary
+                  description: New profile picture file
+      responses:
+        "200":
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Users]
+      summary: Delete a user
+      description: Deletes a user account by ID.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─────────────────────────────────────────
+  # MEMBERS
+  # ─────────────────────────────────────────
+  /api/members:
+    get:
+      tags: [Members]
+      summary: Get all members
+      description: Retrieves a list of all registered borrowing members.
+      responses:
+        "200":
+          description: List of members retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        description: Array of member objects
+                        items:
+                          $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Members]
+      summary: Create a new member
+      description: Registers a new borrowing member.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemberRequest"
+      responses:
+        "200":
+          description: Member created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/members/{id}:
+    put:
+      tags: [Members]
+      summary: Update a member
+      description: Updates an existing member's data by ID.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemberRequest"
+      responses:
+        "200":
+          description: Member updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Members]
+      summary: Delete a member
+      description: Deletes a borrowing member by ID.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Member deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─────────────────────────────────────────
+  # DASHBOARD
+  # ─────────────────────────────────────────
+  /api/dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Get dashboard information
+      description: Retrieves aggregated statistics for the dashboard including total counts of members, books, and borrows, along with daily borrow history.
+      responses:
+        "200":
+          description: Dashboard statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/DashboardResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ─────────────────────────────────────────
+  # RACKS
+  # ─────────────────────────────────────────
+  /api/racks:
+    get:
+      tags: [Racks]
+      summary: Get all racks
+      description: Retrieves a list of all book racks available in the library.
+      responses:
+        "200":
+          description: List of racks retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        description: Array of rack objects
+                        items:
+                          $ref: "#/components/schemas/Rack"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Racks]
+      summary: Create a new rack
+      description: Adds a new book rack to the library.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRackRequest"
+      responses:
+        "200":
+          description: Rack created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/racks/{id}:
+    put:
+      tags: [Racks]
+      summary: Update a rack
+      description: Updates an existing rack's data by ID.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRackRequest"
+      responses:
+        "200":
+          description: Rack updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Racks]
+      summary: Delete a rack
+      description: Deletes a rack by ID.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Rack deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─────────────────────────────────────────
+  # BOOKS
+  # ─────────────────────────────────────────
+  /api/books:
+    get:
+      tags: [Books]
+      summary: Get all books
+      description: Retrieves a list of all books including their available quantity computed from active borrows.
+      responses:
+        "200":
+          description: List of books retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        description: Array of book objects
+                        items:
+                          $ref: "#/components/schemas/Book"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Books]
+      summary: Create a new book
+      description: Adds a new book to the library. Accepts multipart form data including an optional book cover image.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateBookRequest"
+      responses:
+        "200":
+          description: Book created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/books/{id}:
+    put:
+      tags: [Books]
+      summary: Update a book
+      description: Updates an existing book's data by ID.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateBookRequest"
+      responses:
+        "200":
+          description: Book updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Books]
+      summary: Delete a book
+      description: Deletes a book by ID.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Book deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─────────────────────────────────────────
+  # BORROWS
+  # ─────────────────────────────────────────
+  /api/borrows:
+    get:
+      tags: [Borrows]
+      summary: Get all borrows
+      description: Retrieves a list of all borrow transactions including member info and detailed book items per transaction.
+      responses:
+        "200":
+          description: List of borrows retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        description: Array of borrow transaction objects
+                        items:
+                          $ref: "#/components/schemas/Borrow"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Borrows]
+      summary: Create a new borrow transaction
+      description: Records a new book borrowing transaction for a member, including one or more book items.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBorrowRequest"
+      responses:
+        "200":
+          description: Borrow transaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/borrows/{id}:
+    put:
+      tags: [Borrows]
+      summary: Update a borrow transaction
+      description: Updates an existing borrow transaction by ID.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBorrowRequest"
+      responses:
+        "200":
+          description: Borrow transaction updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Borrows]
+      summary: Delete a borrow transaction
+      description: Deletes a borrow transaction by ID.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Borrow transaction deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOnlyResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+# ─────────────────────────────────────────
+# COMPONENTS
+# ─────────────────────────────────────────
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: The unique integer identifier of the resource
+      schema:
+        type: integer
+
+  responses:
+    BadRequest:
+      description: Bad request — validation error or malformed input
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MessageOnlyResponse"
+    Unauthorized:
+      description: Unauthorized — missing or invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MessageOnlyResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MessageOnlyResponse"
+
+  schemas:
+    # ── Base ──────────────────────────────
+    BaseResponse:
+      type: object
+      description: Standard base response wrapper for all API responses
+      properties:
+        data:
+          description: The response payload. Can be any type depending on the endpoint.
+          nullable: true
+        message:
+          type: string
+          description: Human-readable message describing the result of the request
+
+    MessageOnlyResponse:
+      type: object
+      description: Response returned when there is no data payload, only a status message
+      properties:
+        data:
+          description: Always null for this response type
+          nullable: true
+          type: object
+        message:
+          type: string
+          description: Human-readable message describing the result of the request
+
+    # ── User ──────────────────────────────
+    User:
+      type: object
+      description: Represents a registered system user (admin/operator)
+      properties:
+        id:
+          type: integer
+          description: Unique identifier of the user
+        name:
+          type: string
+          description: Full name of the user
+        email:
+          type: string
+          format: email
+          description: Email address of the user
+        image:
+          type: string
+          nullable: true
+          description: URL path to the user's profile picture, or null if not set
+
+    # ── Member ────────────────────────────
+    Member:
+      type: object
+      description: Represents a library member who can borrow books
+      properties:
+        id:
+          type: integer
+          description: Unique identifier of the member
+        name:
+          type: string
+          description: Full name of the member
+        phone_number:
+          type: string
+          nullable: true
+          description: Optional contact phone number of the member
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the member record was created
+
+    CreateMemberRequest:
+      type: object
+      description: Request body for creating or updating a member
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 50
+          description: Full name of the member, between 3 and 50 characters
+        phone_number:
+          type: string
+          maxLength: 50
+          description: Optional contact phone number, maximum 50 characters
+
+    # ── Dashboard ─────────────────────────
+    DashboardResponse:
+      type: object
+      description: Aggregated statistics shown on the dashboard
+      properties:
+        count_member:
+          type: integer
+          description: Total number of registered members
+        count_book:
+          type: integer
+          description: Total number of books in the library
+        count_borrow:
+          type: integer
+          description: Total number of borrow transactions
+        borrow_histories:
+          type: array
+          description: Daily borrow activity history
+          items:
+            type: object
+            description: Borrow count for a specific date
+            properties:
+              count_borrow:
+                type: integer
+                description: Number of borrows that occurred on this date
+              borrow_at:
+                type: string
+                format: date-time
+                description: The date of the borrow activity
+
+    # ── Rack ──────────────────────────────
+    Rack:
+      type: object
+      description: Represents a physical book rack in the library
+      properties:
+        id:
+          type: integer
+          description: Unique identifier of the rack
+        name:
+          type: string
+          description: Name or label of the rack
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the rack record was created
+
+    CreateRackRequest:
+      type: object
+      description: Request body for creating or updating a rack
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 15
+          description: Name or label for the rack, maximum 15 characters
+
+    # ── Book ──────────────────────────────
+    Book:
+      type: object
+      description: Represents a book in the library with availability info
+      properties:
+        id:
+          type: integer
+          description: Unique identifier of the book
+        title:
+          type: string
+          description: Title of the book
+        quantity:
+          type: integer
+          description: Total number of copies owned by the library
+        available_quantity:
+          type: integer
+          description: Number of copies currently available for borrowing (total minus active borrows)
+        image:
+          type: string
+          nullable: true
+          description: URL path to the book cover image, or null if not set
+        rack_id:
+          type: integer
+          nullable: true
+          description: ID of the rack where this book is stored, or null if unassigned
+        rack_name:
+          type: string
+          nullable: true
+          description: Name of the rack where this book is stored, or null if unassigned
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the book record was created
+
+    CreateBookRequest:
+      type: object
+      description: Request body for creating or updating a book (sent as multipart form data)
+      required: [title, quantity]
+      properties:
+        title:
+          type: string
+          description: Title of the book
+        quantity:
+          type: integer
+          description: Total number of copies to register
+        rack_id:
+          type: string
+          description: ID of the rack to assign this book to, sent as string in form-data
+        image:
+          type: string
+          format: binary
+          description: Optional book cover image file
+
+    # ── Borrow ────────────────────────────
+    BorrowDetail:
+      type: object
+      description: A single book item within a borrow transaction
+      properties:
+        id:
+          type: integer
+          description: Unique identifier of the borrow detail record
+        book_id:
+          type: integer
+          description: ID of the book being borrowed
+        quantity:
+          type: integer
+          description: Number of copies borrowed for this item
+        borrow_id:
+          type: integer
+          description: ID of the parent borrow transaction
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this borrow detail record was created
+        book:
+          type: object
+          description: Snapshot of the book data at the time of the transaction
+          properties:
+            id:
+              type: integer
+              description: Unique identifier of the book
+            title:
+              type: string
+              description: Title of the book
+            image:
+              type: string
+              nullable: true
+              description: URL path to the book cover image, or null if not set
+            quantity:
+              type: integer
+              description: Total number of copies owned by the library
+            rack_id:
+              type: integer
+              nullable: true
+              description: ID of the rack where this book is stored
+            created_at:
+              type: string
+              format: date-time
+              description: Timestamp when the book record was created
+            updated_at:
+              type: string
+              format: date-time
+              description: Timestamp when the book record was last updated
+
+    Borrow:
+      type: object
+      description: Represents a complete borrow transaction made by a member
+      properties:
+        id:
+          type: integer
+          description: Unique identifier of the borrow transaction
+        member_borrow_id:
+          type: integer
+          description: ID of the member who made this borrow transaction
+        member_borrow_name:
+          type: string
+          description: Name of the member who made this borrow transaction
+        is_returned:
+          type: boolean
+          description: Whether all books in this transaction have been returned
+        due_date:
+          type: string
+          format: date-time
+          description: Deadline date by which all books must be returned
+        returned_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the books were actually returned, or null if not yet returned
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the borrow transaction was created
+        borrow_details:
+          type: array
+          description: List of individual book items included in this borrow transaction
+          items:
+            $ref: "#/components/schemas/BorrowDetail"
+
+    CreateBorrowRequest:
+      type: object
+      description: Request body for creating or updating a borrow transaction
+      required: [member_borrow_id, due_date, borrow_details]
+      properties:
+        member_borrow_id:
+          type: integer
+          description: ID of the member making the borrow request
+        due_date:
+          type: string
+          format: date-time
+          description: The due date by which all borrowed books must be returned
+        borrow_details:
+          type: array
+          minItems: 1
+          description: List of books to borrow, must contain at least one item
+          items:
+            type: object
+            required: [book_id, quantity]
+            description: A single book item in the borrow request
+            properties:
+              book_id:
+                type: integer
+                description: ID of the book to borrow
+              quantity:
+                type: integer
+                description: Number of copies to borrow
