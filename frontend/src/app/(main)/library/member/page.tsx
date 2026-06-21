@@ -51,7 +51,7 @@ export default function Page() {
   return (
     <DataTable
       isPending={isPendingCategories}
-      topbar={<ButtonCreateMember withLabel={true} />}
+      topbar={<ButtonCreateMember />}
       search={{
         isSearch: true,
         column: "name",

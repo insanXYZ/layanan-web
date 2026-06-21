@@ -64,9 +64,9 @@ export async function GetDashboardInformation() {
       .groupBy(sql`DATE(${borrowsTable.created_at})`);
 
     const res: GetDashboardInformationResponse = {
-      count_borrow: countBorrow[0].count_borrow,
-      count_book: countBook[0].count_book,
-      count_member: countMember[0].count_member,
+      total_borrow: countBorrow[0].count_borrow,
+      total_book: countBook[0].count_book,
+      total_member: countMember[0].count_member,
       total_returned: totalReturned[0].total_returned,
       total_borrowed: totalBorrowed[0].total_borrowed,
       total_lated: totalLated[0].total_lated,

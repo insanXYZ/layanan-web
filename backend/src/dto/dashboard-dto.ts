@@ -4,9 +4,9 @@ export interface BorrowHistories {
 }
 
 export interface GetDashboardInformationResponse {
-  count_member: number;
-  count_book: number;
-  count_borrow: number;
+  total_member: number;
+  total_book: number;
+  total_borrow: number;
   total_returned: number;
   total_borrowed: number;
   total_lated: number;
