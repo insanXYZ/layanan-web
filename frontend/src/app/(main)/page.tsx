@@ -21,9 +21,9 @@ export default function Page() {
   ) : (
     <div className="flex flex-col gap-5">
       <SectionCards
-        countBorrow={data?.count_borrow!}
-        countMember={data?.count_member!}
-        countBook={data?.count_book!}
+        countBorrow={data?.total_borrow!}
+        countMember={data?.total_member!}
+        countBook={data?.total_book!}
         totalLated={data?.total_lated!}
         totalBorrowed={data?.total_borrowed!}
         totalReturned={data?.total_returned!}

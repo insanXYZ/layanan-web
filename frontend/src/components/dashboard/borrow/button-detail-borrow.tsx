@@ -28,6 +28,11 @@ import { BorrowDto } from "@/dto/borrow-dto";
 
 export default function ButtonDetailBorrow({ borrow }: { borrow: BorrowDto }) {
   const [open, setOpen] = useState<boolean>(false);
+
+  const isDue =
+    DateTime.now().toJSDate() >
+    DateTime.fromISO(borrow.due_date.toString()).toJSDate();
+
   const status = () => {
     const isReturned = borrow.is_returned;
     if (isReturned) {
