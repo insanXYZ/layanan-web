@@ -80,7 +80,7 @@ export default function ButtonEditProfile({ user }: { user: UserDto }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Edit</Button>
+        <Button className="bg-bungur text-white">Edit</Button>
       </DialogTrigger>
 
       <DialogContent showCloseButton={false}>

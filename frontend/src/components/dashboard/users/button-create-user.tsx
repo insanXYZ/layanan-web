@@ -1,3 +1,8 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Camera, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import z from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ButtonLoading } from "@/components/ui/button-loading";
@@ -23,11 +28,6 @@ import {
   HttpMethod,
   useMutationTanstack,
 } from "@/hooks/use-tanstack";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Camera, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import z from "zod";
 
 export default function ButtonCreateUser() {
   const [open, setOpen] = useState<boolean>(false);
@@ -75,7 +75,7 @@ export default function ButtonCreateUser() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="bg-bungur text-white">
           <Plus />
           Buat Akun
         </Button>
@@ -86,112 +86,116 @@ export default function ButtonCreateUser() {
           <DialogHeader>
             <DialogTitle>Buat Akun</DialogTitle>
           </DialogHeader>
-          <FieldGroup>
-            <Controller
-              name="image"
-              control={form.control}
-              render={({
-                field: { ref, onBlur, name, onChange },
-                fieldState,
-              }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor={name} className="flex justify-center">
-                    <Avatar className="w-32 h-32">
-                      <AvatarImage
-                        src={
-                          previewImageThumbnail
-                            ? previewImageThumbnail
-                            : undefined
-                        }
-                      />
-                      <AvatarFallback>
-                        <Camera />
-                      </AvatarFallback>
-                    </Avatar>
-                  </FieldLabel>
-                  <Input
-                    type="file"
-                    id={name}
-                    name={name}
-                    onBlur={onBlur}
-                    ref={ref}
-                    onChange={(e) => {
-                      onChange(e.target.files ? e.target.files[0] : undefined);
-                      handleChangeImage(e);
-                    }}
-                    accept="image/*"
-                    hidden={true}
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
+          <div className="p-6">
+            <FieldGroup>
+              <Controller
+                name="image"
+                control={form.control}
+                render={({
+                  field: { ref, onBlur, name, onChange },
+                  fieldState,
+                }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={name} className="flex justify-center">
+                      <Avatar className="w-32 h-32">
+                        <AvatarImage
+                          src={
+                            previewImageThumbnail
+                              ? previewImageThumbnail
+                              : undefined
+                          }
+                        />
+                        <AvatarFallback>
+                          <Camera />
+                        </AvatarFallback>
+                      </Avatar>
+                    </FieldLabel>
+                    <Input
+                      type="file"
+                      id={name}
+                      name={name}
+                      onBlur={onBlur}
+                      ref={ref}
+                      onChange={(e) => {
+                        onChange(
+                          e.target.files ? e.target.files[0] : undefined,
+                        );
+                        handleChangeImage(e);
+                      }}
+                      accept="image/*"
+                      hidden={true}
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
 
-            <Controller
-              name="name"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor={field.name}>Nama</FieldLabel>
-                  <Input
-                    {...field}
-                    id={field.name}
-                    aria-invalid={fieldState.invalid}
-                    autoComplete="off"
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
-            <Controller
-              name="email"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor={field.name}>Email</FieldLabel>
-                  <Input
-                    {...field}
-                    id={field.name}
-                    aria-invalid={fieldState.invalid}
-                    autoComplete="off"
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
-            <Controller
-              name="password"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor={field.name}>Kata sandi</FieldLabel>
-                  <Input
-                    {...field}
-                    id={field.name}
-                    aria-invalid={fieldState.invalid}
-                    autoComplete="off"
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
-          </FieldGroup>
-          <DialogFooter className="mt-4">
-            <DialogClose asChild>
-              <Button variant="outline">Batal</Button>
-            </DialogClose>
-            <ButtonLoading type="submit" isPending={isPending}>
-              Simpan
-            </ButtonLoading>
-          </DialogFooter>
+              <Controller
+                name="name"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={field.name}>Nama</FieldLabel>
+                    <Input
+                      {...field}
+                      id={field.name}
+                      aria-invalid={fieldState.invalid}
+                      autoComplete="off"
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+              <Controller
+                name="email"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                    <Input
+                      {...field}
+                      id={field.name}
+                      aria-invalid={fieldState.invalid}
+                      autoComplete="off"
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+              <Controller
+                name="password"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={field.name}>Kata sandi</FieldLabel>
+                    <Input
+                      {...field}
+                      id={field.name}
+                      aria-invalid={fieldState.invalid}
+                      autoComplete="off"
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+            </FieldGroup>
+            <DialogFooter className="mt-4">
+              <DialogClose asChild>
+                <Button variant="outline">Batal</Button>
+              </DialogClose>
+              <ButtonLoading type="submit" isPending={isPending}>
+                Simpan
+              </ButtonLoading>
+            </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

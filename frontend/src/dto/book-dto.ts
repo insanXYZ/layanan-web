@@ -1,4 +1,5 @@
 import z from "zod";
+import { messageMaxZod, messageMinZod } from "@/utils/zod";
 
 export interface BookDto {
   id: number;
@@ -12,14 +13,20 @@ export interface BookDto {
 
 export const CreateBookRequest = z.object({
   image: z.file().mime(["image/png", "image/jpeg", "image/webp"]).optional(),
-  title: z.string().min(3).max(100),
+  title: z
+    .string()
+    .min(3, messageMinZod(3, "judul"))
+    .max(100, messageMaxZod(100, "judul")),
   rack_id: z.string().optional(),
   quantity: z.int().min(0),
 });
 
 export const UpdateBookRequest = z.object({
   image: z.file().mime(["image/png", "image/jpeg", "image/webp"]).optional(),
-  title: z.string().min(3).max(100),
+  title: z
+    .string()
+    .min(3, messageMinZod(3, "judul"))
+    .max(100, messageMaxZod(100, "judul")),
   rack_id: z.string().optional(),
   quantity: z.int().min(0),
 });

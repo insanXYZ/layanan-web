@@ -26,7 +26,9 @@ export type GetBorrowResponse = BorrowDto;
 
 export const CreateBorrowRequest = z.object({
   member_borrow_id: z.int(),
-  due_date: z.coerce.date(),
+  due_date: z.coerce.date({
+    message: "jatuh tempo tidak valid",
+  }),
   borrow_details: z
     .array(
       z.object({
