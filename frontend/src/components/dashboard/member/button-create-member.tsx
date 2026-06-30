@@ -26,10 +26,14 @@ import { HttpMethod, useMutationTanstack } from "@/hooks/use-tanstack";
 
 export default function ButtonCreateMember({
   label = undefined,
+  openP = false,
+  hidden_button = false,
 }: {
   label?: ReactNode;
+  openP?: boolean;
+  hidden_button?: boolean;
 }) {
-  const [open, setOpen] = useState<boolean>(false);
+  const [open, setOpen] = useState<boolean>(openP);
   const { mutate, isPending, isSuccess } = useMutationTanstack(
     ["getMemberBorrows"],
     true,
@@ -56,8 +60,8 @@ export default function ButtonCreateMember({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-bungur text-white">
+      <DialogTrigger hidden={hidden_button} asChild>
+        <Button className="bg-bungur text-white" type="button">
           {label ? (
             label
           ) : (
@@ -69,7 +73,13 @@ export default function ButtonCreateMember({
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-sm" showCloseButton={false}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="contents">
+        <form
+          onSubmit={(e) => {
+            e.stopPropagation();
+            form.handleSubmit(onSubmit)(e);
+          }}
+          className="contents"
+        >
           <DialogHeader>
             <DialogTitle>Buat Member</DialogTitle>
           </DialogHeader>

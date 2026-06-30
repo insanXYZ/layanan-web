@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { DateTime } from "luxon";
 import { NextRequest } from "next/server";
 import { db } from "@/db";
@@ -61,6 +61,63 @@ export async function CreateBorrows(req: NextRequest) {
     const parsed = CreateBorrowRequest.parse(body);
 
     await db.transaction(async (tx) => {
+      const distinctBorrowDetails = parsed.borrow_details.reduce<
+        Record<number, number>
+      >((acc, curr) => {
+        if (!acc[curr.book_id]) {
+          acc[curr.book_id] = curr.quantity;
+        } else {
+          acc[curr.book_id] += curr.quantity;
+        }
+
+        return acc;
+      }, {});
+
+      const keyBooks = Object.keys(distinctBorrowDetails).map(Number);
+
+      const borrowedQtyExpr = sql<number>`
+          COALESCE(
+            SUM(
+              CASE 
+                WHEN ${borrowsTable.is_returned} = false 
+                THEN ${borrowDetailsTable.quantity} 
+                ELSE 0 
+              END
+            ), 
+            0
+          )
+        `.mapWith(Number);
+
+      const books = await tx
+        .select({
+          id: booksTable.id,
+          quantity: booksTable.quantity,
+          available_quantity:
+            sql<number>`${booksTable.quantity} - ${borrowedQtyExpr}`.mapWith(
+              Number,
+            ),
+        })
+        .from(booksTable)
+        .leftJoin(
+          borrowDetailsTable,
+          eq(borrowDetailsTable.book_id, booksTable.id),
+        )
+        .leftJoin(
+          borrowsTable,
+          and(eq(borrowsTable.id, borrowDetailsTable.borrow_id)),
+        )
+        .where(inArray(booksTable.id, keyBooks))
+        .groupBy(booksTable.id, booksTable.quantity);
+
+      const isGreaterQuantity = books.find((v) => {
+        const detail = distinctBorrowDetails[v.id];
+        return detail > v.available_quantity;
+      });
+
+      if (isGreaterQuantity) {
+        throw new Error("jumlah peminjaman tidak valid");
+      }
+
       const newBorrowId = await tx
         .insert(borrowsTable)
         .values({
@@ -111,7 +168,7 @@ export async function CheckBorrow(borrowId: string) {
             GetDayFromDate(DateTime.now().toJSDate(), borrows[0].due_date) *
               1000,
           ),
-          user_id: borrows[0].member_borrow_id,
+          member_id: borrows[0].member_borrow_id,
         });
       }
 

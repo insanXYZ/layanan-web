@@ -79,8 +79,8 @@ export const feeTable = mysqlTable("fees", {
       onDelete: "cascade",
     })
     .notNull(),
-  user_id: int()
-    .references(() => usersTable.id, { onDelete: "cascade" })
+  member_id: int()
+    .references(() => memberBorrowsTable.id, { onDelete: "cascade" })
     .notNull(),
   price: bigint({
     unsigned: true,

@@ -69,7 +69,11 @@ export default function ButtonCreateBorrows() {
   const form = useForm<z.input<typeof CreateBorrowRequest>>({
     defaultValues: {
       member_borrow_id: undefined,
-      due_date: undefined,
+      due_date: DateTime.now()
+        .plus({
+          month: 1,
+        })
+        .toJSDate(),
       borrow_details: [
         {
           book_id: undefined,
@@ -177,6 +181,7 @@ export default function ButtonCreateBorrows() {
                           </ComboboxList>
                         </ComboboxContent>
                       </Combobox>
+
                       <ButtonCreateMember label={<UserRoundPlus />} />
                     </div>
                     {fieldState.invalid && (
@@ -197,10 +202,13 @@ export default function ButtonCreateBorrows() {
               <Controller
                 name="due_date"
                 control={form.control}
-                render={({ field: { onChange, name }, fieldState }) => (
+                render={({ field: { onChange, name, value }, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor={name}>Jatuh tempo</FieldLabel>
-                    <DatePicker onChange={onChange} />
+                    <DatePicker
+                      onChange={onChange}
+                      defaultDate={value as Date}
+                    />
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
